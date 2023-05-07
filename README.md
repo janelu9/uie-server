@@ -1,10 +1,10 @@
-# uie-server
-uie model server for infomation extract
+# UIE Server
+UIE model predict server for infomation extracting
   ```python
-uie =UIEInferModel(static_model_file,static_params_file)
-schema=['时间', '人物', '赛事名称'] # Define the schema for entity extraction
-text="2月8日上午北京冬奥会自由式滑雪女子大跳台决赛中中国选手谷爱凌以188.25分获得金牌！"
-uie(schema,text)
+>>> uie =UIEInferModel(static_model_file,static_params_file)
+>>> schema=['时间', '人物', '赛事名称'] # Define the schema for entity extraction
+>>> text="2月8日上午北京冬奥会自由式滑雪女子大跳台决赛中中国选手谷爱凌以188.25分获得金牌！"
+>>> print(uie(schema,text))
 {'时间': [{'text': '2月8日上午',
    'start': 0,
    'end': 6,
