@@ -118,7 +118,7 @@ class UIEInferModel:
             encoded_inputs['attention_mask'].append([1]*(p_len+c_len)+pad)
         return encoded_inputs,encoded_contents['offset_mapping'][1:-1]            
     
-    def predict(self,schemas,text,max_seq_len=2048,overlapping=256):
+    def predict(self,schema,text,max_seq_len=2048,overlapping=256):
         encoded_promts = self.tokenizer(schema)
         prompts_len =[len(i) for i in  encoded_promts['input_ids']]
         max_plen = max(prompts_len)
