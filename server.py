@@ -17,8 +17,6 @@ def sel_max(arr):
     return a,m
 
 def get_span(start_ids, end_ids):
-    start_ids = sorted(start_ids, key=lambda x: x[0])
-    end_ids = sorted(end_ids, key=lambda x: x[0])
     pre_p = 0
     sp = []
     ep = []
