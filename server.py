@@ -89,11 +89,14 @@ def binary_search(ori_offset,offset_mapping):
     return -1
 
 class UIEInferModel:
-    def __init__(self,static_model_file,static_params_file):
+    def __init__(self,static_model_file,static_params_file, token_file="uie-base",gpu_id=None):
         config = paddle.inference.Config(static_model_file, static_params_file)
-        config.disable_gpu()
-        config.enable_mkldnn()
-        #config.enable_use_gpu(1000, 0)
+        if gpu_id is not None:
+            config.enable_use_gpu(8000, gpu_id)
+            config.switch_ir_optim(False)
+        else:
+            config.disable_gpu()
+            config.enable_mkldnn()
         config.delete_pass("embedding_eltwise_layernorm_fuse_pass")
         config.delete_pass("fused_multi_transformer_encoder_pass")
         config.set_cpu_math_library_num_threads(16)
@@ -103,7 +106,7 @@ class UIEInferModel:
         self.predictor = paddle.inference.create_predictor(config)
         self.input_handles = [self.predictor.get_input_handle(name) for name in self.predictor.get_input_names()]
         self.output_handles = [self.predictor.get_output_handle(name) for name in self.predictor.get_output_names()]
-        self.tokenizer = AutoTokenizer.from_pretrained("uie-base")
+        self.tokenizer = AutoTokenizer.from_pretrained(token_file)
 
     def preprocess(self,encoded_promts,text,prompts_len,pads):
         encoded_contents = self.tokenizer(text=text,return_token_type_ids= False,return_offsets_mapping=True,)
