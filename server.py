@@ -90,23 +90,20 @@ def binary_search(ori_offset,offset_mapping):
 
 class UIEInferModel:
     def __init__(self,static_model_file,static_params_file):
-        config = paddle.inference.Config(static_model_file, static_params_file, token_file="uie-base",gpu_id=None)
-        if gpu_id is not None:
-            config.enable_use_gpu(8000, gpu_id)
-        else:
-            config.disable_gpu()
-            config.enable_mkldnn()
+        config = paddle.inference.Config(static_model_file, static_params_file)
+        config.disable_gpu()
+        config.enable_mkldnn()
+        #config.enable_use_gpu(1000, 0)
         config.delete_pass("embedding_eltwise_layernorm_fuse_pass")
         config.delete_pass("fused_multi_transformer_encoder_pass")
         config.set_cpu_math_library_num_threads(16)
         config.switch_use_feed_fetch_ops(False)
-        config.switch_ir_optim(False)
         config.disable_glog_info()
         config.enable_memory_optim()
         self.predictor = paddle.inference.create_predictor(config)
         self.input_handles = [self.predictor.get_input_handle(name) for name in self.predictor.get_input_names()]
         self.output_handles = [self.predictor.get_output_handle(name) for name in self.predictor.get_output_names()]
-        self.tokenizer = AutoTokenizer.from_pretrained(token_file)
+        self.tokenizer = AutoTokenizer.from_pretrained("uie-base")
 
     def preprocess(self,encoded_promts,text,prompts_len,pads):
         encoded_contents = self.tokenizer(text=text,return_token_type_ids= False,return_offsets_mapping=True,)
@@ -119,6 +116,8 @@ class UIEInferModel:
             encoded_inputs['token_type_ids'].append(encoded_promts['token_type_ids'][i]+c_type_ids+pad)
             encoded_inputs['position_ids'].append(list(range(0,p_len+c_len))+pad)
             encoded_inputs['attention_mask'].append([1]*(p_len+c_len)+pad)
+        for k in encoded_inputs:
+            encoded_inputs[k]=np.array(encoded_inputs[k])
         return encoded_inputs,encoded_contents['offset_mapping'][1:-1]            
     
     def predict(self,schema,text,max_seq_len=2048,overlapping=256):
@@ -135,10 +134,10 @@ class UIEInferModel:
         while point<stop:
             tmp_txt = text[point:point+block_len]
             encoded_inputs,offset_mapping=self.preprocess(encoded_promts,tmp_txt,prompts_len,pads)
-            self.input_handles[0].copy_from_cpu(np.array(encoded_inputs['input_ids']))
-            self.input_handles[1].copy_from_cpu(np.array(encoded_inputs['token_type_ids']))
-            self.input_handles[2].copy_from_cpu(np.array(encoded_inputs['position_ids']))
-            self.input_handles[3].copy_from_cpu(np.array(encoded_inputs['attention_mask']))
+            self.input_handles[0].copy_from_cpu(encoded_inputs['input_ids'])
+            self.input_handles[1].copy_from_cpu(encoded_inputs['token_type_ids'])
+            self.input_handles[2].copy_from_cpu(encoded_inputs['position_ids'])
+            self.input_handles[3].copy_from_cpu(encoded_inputs['attention_mask'])
             self.predictor.run()
             start_prob = self.output_handles[0].copy_to_cpu().tolist()
             end_prob = self.output_handles[1].copy_to_cpu().tolist()
@@ -153,9 +152,9 @@ class UIEInferModel:
                                  'probability':p} for (s,e),p in zip(*get_id_and_prob(span_set,bais,offset_mapping))]
             results.append(result)
             point+=step_len
-        return self.postprocess(results,schema,step_len,overlapping)
+        return self.postprocess(text,results,schema,step_len,overlapping)
     
-    def postprocess(self,results,schema,step_len,overlapping):
+    def postprocess(self,text,results,schema,step_len,overlapping):
         point=step_len
         result0= results[0]
         result_olp = {}
@@ -164,15 +163,16 @@ class UIEInferModel:
             result[prompt]=[]
             result_olp[prompt]=[]
             for item in result0[prompt]:
-                if item['end']<=point:
+                if item['end']<point:
                     result[prompt].append(item)
                 else:
                     result_olp[prompt].append(item)
         for block in results[1:]:
             result_olp_tail={}
             for prompt in schema:
+                result_olp_tail[prompt]=[]
                 for item in block[prompt]:
-                    if item['start']>=point+overlapping and item['end']<=point+step_len:
+                    if item['start']>point+overlapping and item['end']<point+step_len:
                         result[prompt].append(item)
                     elif item['start']<point+overlapping :
                         for olp in result_olp[prompt]:
@@ -182,7 +182,7 @@ class UIEInferModel:
                                 item['probability'] =max(item['probability'],olp['probability'])
                                 item['text']=text[item['start']:item['end']]
                                 result_olp[prompt].remove(olp)
-                        if item['end']<=point+step_len:
+                        if item['end']<point+step_len:
                             result[prompt].append(item)
                         else:
                             result_olp_tail[prompt].append(item)      
