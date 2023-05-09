@@ -1,5 +1,5 @@
 # UIE Inference Service
-[UIE](https://gitee.com/paddlepaddle/PaddleNLP/tree/develop/applications/information_extraction/text) model's inference service for information extraction. Supportting infinite length of text inputs.
+[UIE](https://gitee.com/paddlepaddle/PaddleNLP/tree/develop/applications/information_extraction/text) model's inference service for information extraction. Supportting infinite length of text inputs, faster and more accurate.
   ```python
 >>> from server import UIEInferModel,static_model_file,static_params_file
 >>> uie =UIEInferModel(static_model_file,static_params_file)
