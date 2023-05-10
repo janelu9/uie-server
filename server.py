@@ -17,6 +17,8 @@ def sel_max(arr):
     return a,m
 
 def get_span(start_ids, end_ids):
+    start_ids = sorted(start_ids, key=lambda x: x[0])
+    end_ids = sorted(end_ids, key=lambda x: x[0])
     pre_p = 0
     sp = []
     ep = []
@@ -176,17 +178,18 @@ class UIEInferModel:
                     if item['start']>point+overlapping and item['end']<point+step_len:
                         result[prompt].append(item)
                     elif item['start']<point+overlapping :
+                        temp = item.copy()
                         for olp in result_olp[prompt]:
-                            if not (item['start']>olp['end'] or item['end']<olp['start']):
-                                item['start'] =min(item['start'],olp['start'])
-                                item['end'] =max(item['end'],olp['end'])
-                                item['probability'] =max(item['probability'],olp['probability'])
-                                item['text']=text[item['start']:item['end']]
+                            if not (temp['start']>olp['end'] or temp['end']<olp['start']):
+                                temp['start'] =min(temp['start'],olp['start'])
+                                temp['end'] =max(temp['end'],olp['end'])
+                                temp['probability'] =max(temp['probability'],olp['probability'])
+                                temp['text']=text[temp['start']:temp['end']]
                                 result_olp[prompt].remove(olp)
-                        if item['end']<point+step_len:
-                            result[prompt].append(item)
+                        if temp['end']<point+step_len:
+                            result[prompt].append(temp)
                         else:
-                            result_olp_tail[prompt].append(item)      
+                            result_olp_tail[prompt].append(temp)      
                     else:
                         result_olp_tail[prompt].append(item)
                 result[prompt].extend(result_olp[prompt])
