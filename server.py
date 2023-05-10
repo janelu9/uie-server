@@ -74,20 +74,6 @@ def get_id_and_prob(span_set,bais,offset_mapping):
             prob.append(start[1] * end[1])
     return sentence_id, prob
 
-def binary_search(ori_offset,offset_mapping):
-    s =0 
-    e =len(offset_mapping)-1
-    while s<=e:
-        m = (s+e)//2
-        a,b=offset_mapping[m]
-        if a<=ori_offset<b:
-            return m
-        elif ori_offset<a:
-            e=m-1
-        else:
-            s=m+1
-    return -1
-
 class UIEInferModel:
     def __init__(self,static_model_file,static_params_file, token_file="uie-base",gpu_id=None):
         config = paddle.inference.Config(static_model_file, static_params_file)
