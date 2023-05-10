@@ -5,7 +5,7 @@ import numpy as np
 static_model_file="/root/.paddlenlp/taskflow/information_extraction/uie-base/static/inference.pdmodel"
 static_params_file="/root/.paddlenlp/taskflow/information_extraction/uie-base/static/inference.pdiparams"
 
-def get_bool_ids_greater_than(probs, limit=0.5, return_prob=True):
+def get_bool_ids_greater_than(probs, limit=0.5):
     return [[(i, p) for i, p in enumerate(prob) if p > limit]  for prob in probs]
 
 def sel_max(arr):
