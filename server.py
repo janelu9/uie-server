@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# coding: utf-8
+# Created on Mon May 8 16:42:05 2023
+# @author: Lu Jian
+# Email:janelu@live.cn
+
 from paddlenlp.transformers import AutoTokenizer
 import paddle
 import numpy as np
